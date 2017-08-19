@@ -1,3 +1,3 @@
 
 
-	this is a basic python test record
+	this is a basic python study  test record
