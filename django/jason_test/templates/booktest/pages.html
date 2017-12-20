@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>pages</title>
+</head>
+<body>
+
+<ul>
+	{% for index in page %}
+
+	<li> {{ index.hname }}</li>
+
+	{% endfor %}
+
+</ul>
+
+<ul>
+	{% for i in page.paginator.page_range %}
+	<a href="{% url 'booktest:pages' i %}">{{i}}</a>
+	{% endfor %}
+</ul>
+
+<!-- <h1>test</h1> -->
+</body>
+</html>

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>static file</title>
+</head>
+<body>
+<!-- {% load static from staticfiles %}
+<img src="{% static "booktest/img/1.png" %} " alt="1.png" /> -->
+
+<form method="POST" action="{% url 'booktest:upload' %}" enctype="multipart/form-data">
+	{% csrf_token %}
+	<input type="file" name="picture"> <br/>
+	<input type="submit" name=""/>
+
+</form>
+
+<!-- <h1>test</h1> -->
+
+</body>
+</html>

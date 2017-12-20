@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>book_index</title>
+	<!-- 如下是通过静态文件的方式加载了jquery，同理其他形式的js、CSS等的加载方式一样 -->
+	{% load static from staticfiles %}
+<script type="text/javascript" src="{% static 'booktest/js/jquery-3.2.1.min.js' %}"></script>
+<script type="text/javascript">
+	
+	$(function(){  //这是jquery的操作方式
+
+		// alert($); //这是判断jquery是否正常工作的方式
+		book = $('#book')
+		$.get('{% url 'booktest:ajax_get' %}', function(dic) {
+			console.log(dic);
+			$.each(dic.data,function(index,item){
+
+				book.append('<option value="'+item[0]+'">'+item[1]+'</option>');
+				// console.log()
+			});
+
+		});
+
+		$('#book').change(function(){
+			$('#hero').empty().append('<option value="">请选择英雄</option>');
+
+			$.ajax({   //这里是使用ajax的方式进行数据传输交换，因为ajax既可以将js中的数据传输到django中
+    				url: '{% url 'booktest:get_bookinfo' %}',//又可以从jango中取出数据
+    				data: {id:$(this).val()},
+    				// contentType: 'application/json',
+    				type: "GET", //这里采用的是GET的方式进行数据请求
+    				traditional: true,    // 需要传递列表、字典时加上这句
+    				success: function(result) {  //这里便是从django中取出数据
+    					$.each(result.data,function(index,item){
+							$('#hero').append('<option value="'+item[0]+'">'+item[1]+'</option>');
+						});
+    				}
+				});
+			});
+
+	});
+
+
+</script>
+
+</head>
+
+<body>
+
+<form>
+	<select id="book">
+		<option value="">请选择书</option>
+	</select>
+
+	<select id="hero">
+		<option value="">请选择英雄</option>
+	</select>
+
+</form>
+
+
+</body>
+</html>
