@@ -6,13 +6,8 @@ from hashlib import sha1
 import re
 
 # Create your views here.
-def index(request):
-	name = request.session.get('user',None)
-	print(name)
-	return render(request,'tiantian/index.html')
-
 def register(request):
-	return render(request,'tiantian/register.html')
+	return render(request,'user/register.html')
 
 def register_handle(request):
 	#获取用户提交的信息
@@ -59,7 +54,7 @@ def check_username(request):
 		return JsonResponse({'status':0})
 
 def login(request):
-	return render(request,'tiantian/login.html')
+	return render(request,'user/login.html')
 
 def login_handle(request):
 	name = request.POST['username']

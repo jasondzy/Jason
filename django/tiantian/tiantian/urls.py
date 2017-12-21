@@ -19,4 +19,5 @@ from django.contrib import admin
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
     url(r'^', include('tiantian_project.urls',namespace="tiantian")),
+    url(r'^', include('goods_app.urls',namespace="goods")),
 ]
