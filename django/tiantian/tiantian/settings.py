@@ -25,7 +25,7 @@ SECRET_KEY = '2ljfv-(@p8_#=f%(e9a=mjx1ueqteqnjxy^6$$g=w6(4teu)zv'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -106,6 +106,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.8/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT='/var/www/tiantian/static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static')
 ]

@@ -1,0 +1,90 @@
+*** Starting uWSGI 2.0.15 (64bit) on [Sun Dec 24 23:33:40 2017] ***
+compiled with version: 5.4.0 20160609 on 24 December 2017 23:07:27
+os: Linux-4.4.0-91-generic #114-Ubuntu SMP Tue Aug 8 11:56:56 UTC 2017
+nodename: VM-0-12-ubuntu
+machine: x86_64
+clock source: unix
+detected number of CPU cores: 1
+current working directory: /home/ubuntu/user_jason/git/django/jason_test
+writing pidfile to uwsgi.pid
+detected binary path: /home/ubuntu/.virtualenvs/django/bin/uwsgi
+!!! no internal routing support, rebuild with pcre support !!!
+chdir() to /home/ubuntu/user_jason/git/django/tiantian
+your processes number limit is 3306
+your memory page size is 4096 bytes
+detected max file descriptor number: 1024
+lock engine: pthread robust mutexes
+thunder lock: disabled (you can enable it with --thunder-lock)
+uWSGI http bound on 0.0.0.0:8000 fd 4
+uwsgi socket 0 bound to TCP address 127.0.0.1:34208 (port auto-assigned) fd 3
+Python version: 3.5.2 (default, Nov 23 2017, 16:37:01)  [GCC 5.4.0 20160609]
+Python main interpreter initialized at 0xe18330
+python threads support enabled
+your server socket listen backlog is limited to 100 connections
+your mercy for graceful operations on workers is 60 seconds
+mapped 415280 bytes (405 KB) for 8 cores
+*** Operational MODE: preforking+threaded ***
+unable to find "application" callable in file tiantian/
+unable to load app 0 (mountpoint='') (callable not found or import error)
+*** no app loaded. going in full dynamic mode ***
+*** uWSGI is running in multiple interpreter mode ***
+spawned uWSGI master process (pid: 3632)
+spawned uWSGI worker 1 (pid: 3633, cores: 2)
+spawned uWSGI worker 2 (pid: 3634, cores: 2)
+spawned uWSGI worker 3 (pid: 3635, cores: 2)
+spawned uWSGI worker 4 (pid: 3636, cores: 2)
+spawned uWSGI http 1 (pid: 3637)
+--- no python application found, check your startup logs for errors ---
+[pid: 3633|app: -1|req: -1/1] 162.243.171.102 () {38 vars in 695 bytes} [Sun Dec 24 23:34:11 2017] GET / => generated 21 bytes in 0 msecs (HTTP/1.1 500) 2 headers in 83 bytes (0 switches on core 0)
+SIGINT/SIGQUIT received...killing workers...
+gateway "uWSGI http 1" has been buried (pid: 3637)
+worker 1 buried after 1 seconds
+worker 2 buried after 1 seconds
+worker 3 buried after 1 seconds
+worker 4 buried after 1 seconds
+goodbye to uWSGI.
+*** Starting uWSGI 2.0.15 (64bit) on [Sun Dec 24 23:39:35 2017] ***
+compiled with version: 5.4.0 20160609 on 24 December 2017 23:07:27
+os: Linux-4.4.0-91-generic #114-Ubuntu SMP Tue Aug 8 11:56:56 UTC 2017
+nodename: VM-0-12-ubuntu
+machine: x86_64
+clock source: unix
+detected number of CPU cores: 1
+current working directory: /home/ubuntu/user_jason/git/django/jason_test
+writing pidfile to uwsgi.pid
+detected binary path: /home/ubuntu/.virtualenvs/django/bin/uwsgi
+!!! no internal routing support, rebuild with pcre support !!!
+chdir() to /home/ubuntu/user_jason/git/django/tiantian
+your processes number limit is 3306
+your memory page size is 4096 bytes
+detected max file descriptor number: 1024
+lock engine: pthread robust mutexes
+thunder lock: disabled (you can enable it with --thunder-lock)
+uWSGI http bound on 0.0.0.0:8000 fd 4
+uwsgi socket 0 bound to TCP address 127.0.0.1:46182 (port auto-assigned) fd 3
+Python version: 3.5.2 (default, Nov 23 2017, 16:37:01)  [GCC 5.4.0 20160609]
+Python main interpreter initialized at 0x1f0d330
+python threads support enabled
+your server socket listen backlog is limited to 100 connections
+your mercy for graceful operations on workers is 60 seconds
+mapped 415280 bytes (405 KB) for 8 cores
+*** Operational MODE: preforking+threaded ***
+unable to find "application" callable in file tiantian/
+unable to load app 0 (mountpoint='') (callable not found or import error)
+*** no app loaded. going in full dynamic mode ***
+*** uWSGI is running in multiple interpreter mode ***
+spawned uWSGI master process (pid: 3894)
+spawned uWSGI worker 1 (pid: 3895, cores: 2)
+spawned uWSGI worker 2 (pid: 3896, cores: 2)
+spawned uWSGI worker 3 (pid: 3897, cores: 2)
+spawned uWSGI worker 4 (pid: 3898, cores: 2)
+spawned uWSGI http 1 (pid: 3899)
+--- no python application found, check your startup logs for errors ---
+[pid: 3895|app: -1|req: -1/1] 162.243.171.102 () {38 vars in 696 bytes} [Sun Dec 24 23:39:51 2017] GET / => generated 21 bytes in 0 msecs (HTTP/1.1 500) 2 headers in 83 bytes (0 switches on core 0)
+SIGINT/SIGQUIT received...killing workers...
+gateway "uWSGI http 1" has been buried (pid: 3899)
+worker 1 buried after 1 seconds
+worker 2 buried after 1 seconds
+worker 3 buried after 1 seconds
+worker 4 buried after 1 seconds
+goodbye to uWSGI.

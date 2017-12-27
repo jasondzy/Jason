@@ -59,7 +59,6 @@ def login(request):
 def login_handle(request):
 	name = request.POST['username']
 	pwd = request.POST['pwd']
-
 	#获取密码的加密格式字符串
 	s1 = sha1()
 	s1.update(pwd.encode("utf-8"))
@@ -79,11 +78,60 @@ def login_handle(request):
 			status = 1
 			request.session['user']=name
 			request.session.set_expiry(300)
-			return redirect(reverse('tiantian:index'))
+			return redirect(reverse('goods:index'))
 
 
+def user_center_info(request):
+	name = request.session.get('user',None)
+
+	if name == None:
+		return redirect(reverse('tiantian:login'))
+
+	user = UserInfo.objects.get(user_name=name)
+	addr = user.user_address_info_set.all()
+	if addr.count() == 0:
+		return redirect(reverse('tiantian:user_center_info_register'))
+	address = []
+	for i in addr:
+		address.append(i)
+	context = {'name':name,'address':address}
+	return render(request,'user/user_center_info.html',context)
+
+def user_center_info_register(request):
+	name = request.session.get('user',None)
+	if name == None:
+		return redirect(reverse('tiantian:login'))
+	else:
+		user = UserInfo.objects.get(user_name=name)
+		addr = user.user_address_info_set.all()
+		if addr.count() == 0:
+			status=0
+		else:
+			status=1
+
+		address = []
+		for i in addr:
+			address.append(i)
+		context = {'name':name,'address':address,'status':status}
+		print(context)
+	return render(request,'user/user_center_site.html',context)
+
+def user_center_info_register_handle(request):
+	tel_num = request.POST['tel_num']
+	address = request.POST['address']
+
+	if len(tel_num)<5 or len(address)<5:
+		return redirect(reverse('tiantian:user_center_info_register'))
+
+	username = request.session.get('user',None)
+	if username == None:
+		return redirect(reverse('tiantian:register'))
+	user = UserInfo.objects.get(user_name=username)
+	user.user_address_info_set.create(address=address,tel_num=tel_num)
+	return redirect(reverse('tiantian:user_center_info'))
 
 
-
+def user_center_order(request):
+	return render(request,'user/user_center_order.html')
 
 

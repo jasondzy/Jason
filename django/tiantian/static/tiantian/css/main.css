@@ -17,11 +17,15 @@ html,body{height:100%}
 	line-height:29px;
 }
 
-.login_info{
+/*.login_info{
 	display:none;
-}
+}*/
 
 .login_info em{color:#ff8800}
+
+.login_btn {
+	display: none;
+}
 
 .login_btn a,.user_link a{
 	color:#666;
