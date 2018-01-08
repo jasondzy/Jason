@@ -4,19 +4,25 @@ import tornado.httpserver
 import tornado.ioloop
 import os
 import url
+import Settings
+import models
 
 tornado.options.define('port', default=8000, type=int, help=' runserver on given port')
 
 
+class Application(tornado.web.Application):
+	def __init__(self, *args, **kwargs):
+		self.mysql = models.HandleMysql()
+		self.mysql.create_table()
+		super(Application, self).__init__(*args, **kwargs)
+
 
 def main():
 	tornado.options.parse_command_line()
-	current_path = os.path.dirname(__file__)
 
-	app = tornado.web.Application(
+	app = Application(
 		url.urls,
-		debug = True,
-		static_path = os.path.join(current_path, 'static'),
+		Settings.settings,
 		)
 
 	http_server = tornado.httpserver.HTTPServer(app)
