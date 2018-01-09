@@ -5,4 +5,5 @@ class BaseHandler(tornado.web.RequestHandler):
 
 class IndexHandler(BaseHandler):
 	def get(self):
-		self.write('ok')
+		self.render('index.html')
+		# self.write('ok')

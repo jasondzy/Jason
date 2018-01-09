@@ -26,5 +26,3 @@ class HandleMysql(object):
 	def close_mysql():
 		self.cursor.close()
 		self.db.close()
-
-

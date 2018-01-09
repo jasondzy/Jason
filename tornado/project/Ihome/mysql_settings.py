@@ -9,7 +9,6 @@ setting = dict(
 	charset = 'utf8',
 	)
 
-
 table1 = [
 	'''
 	CREATE TABLE ih_user_profile (
