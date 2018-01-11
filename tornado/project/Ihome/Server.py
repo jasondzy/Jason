@@ -19,8 +19,6 @@ class Application(tornado.web.Application):
 
 def main():
 	tornado.options.parse_command_line()
-	print("==================")
-	print(Settings.settings)
 
 	app = Application(
 		url.urls,
