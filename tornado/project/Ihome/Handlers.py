@@ -1,48 +1,100 @@
 import tornado.web
 import json
+import models
+from utils.captcha.captcha import captcha
 
+Image_id = "1111"
 class BaseHandler(tornado.web.RequestHandler):
-	pass
+	def initialize(self, database):
+		self.database = database
 
-class IndexHandler(BaseHandler):
-	def get(self):
-		print('*************************************')
-		self.render('index.html')
+	def prepare(self):
+		"""预解析json数据"""  #这里判断请求的类型是否是json类型
+		if self.request.headers.get("Content-Type", "").startswith("application/json"):
+			self.json_args = json.loads(self.request.body.decode("utf-8"))  #对body中的json数据进行解析成字典的类型，lods是解析，dumps是翻译成json类
+		else:
+			self.json_args = {}
 
 class House_index(BaseHandler):
 	def get(self):
 		print('================================')
-		houses = [
-		{
-			'house_id':0,
-			'img_url':"/static/images/home01.jpg",
-			'title':'111111',
-		},
-		{
-			'house_id':1,
-			'img_url':"/static/images/home02.jpg",
-			'title':'222222',
-		},
-		{
-			'house_id':2,
-			'img_url':"/static/images/home03.jpg",
-			'title':'333333333',
-		}
+		sql = "select hi_house_id,hi_title,hi_index_image_url from ih_house_info order by hi_order_count desc limit 3;"
+		result = self.database.get_values_from_mysql(sql)
+		print(result)
 
-		]
-
-		area = [
-			{
-				'area_id':0,
-				'name':'1111'
-			}
+		houses = []
+		for value in result:
+			houses.append({'house_id':value[0], 'img_url':value[2], 'title':value[1]})
 
 
-		]
+		sql = " select * from ih_area_info"
+		result = self.database.get_values_from_mysql(sql)
+		# print(result)
 
-		json_houses = json.dumps(houses)
-		json_areas = json.dumps(area)
+		area = []
+		for value in result:
+			area.append({'area_id':value[0], 'name':value[1]})
+		# print(area)
+
+		json_houses = json.dumps(houses) #注意在tornado中self.write(xx)中的xx要是字典型的数据，这样tornado就会自动将xx转换为json数据传输
+		json_areas = json.dumps(area) #注意，字典型数据xx中的子元素的值若是个字典或数组等组合类型的值。需要将子元素的值转换为json型数据包裹在外层自动类型变量中进行传输
 		resp = '{"errcode":"0", "errmsg":"OK", "houses":%s, "areas":%s}' % (json_houses, json_areas)
-		self.write(resp)
-		self.set_header("Content-Type", "application/json; charset=UTF-8")
-		# self.write('ok')
+		self.write(resp) #这里就是返回数据，自动将字典类型变量转换为json数据类型
+		self.set_header("Content-Type", "application/json; charset=UTF-8") #设置传输类型的头部为 json类型，若是不设置可能会出错
+		# self.write('ok') #以上的这么多设置主要是针对$ajax类型的数据请求，因为javascript擅长解析的是json类型数据
+
+class House_register(BaseHandler):
+	def get(self):
+		print("register============")
+		self.render('register.html')
+
+##############验证码功能#################################
+
+class PicCodeHandler(BaseHandler): #前端的img中的src是一个GET方式的请求
+	"""图片验证码"""
+	def get(self):
+		global Image_id #这里使用的是Image_id这个全局变量来传递图片验证码数据
+		"""获取图片验证码"""
+		pre_code_id = self.get_argument("pre", "")
+		cur_code_id = self.get_argument("cur")
+		# 生成图片验证码
+		name, text, pic = captcha.generate_captcha() #这里使用了外接包，导入的captcha是对象，生成了图片信息
+		# print(text) #这里的text是真正的数据，是用来判断用户传入过来的验证是否是正确的
+		Image_id = text
+		#这里的pic是直接生成的图片二进制码，所以接下来可以直接通过self.write往html写入数据
+		self.set_header("Content-Type", "image/jpg")
+		self.write(pic) #这里的作用是将图片的二进制数据写入到前端系统
+
+
+###############手机验证码功能#################################
+class Smscode(BaseHandler):
+	def post(self):
+		global Image_id
+		mobile = self.json_args.get('mobile')  #这里的json_args是个字典类型，存放的是json类型的数据，ajax中的json数据的获取是通过self.request.body()中获取的
+		imageCode = self.json_args.get('piccode') #这里的字典中的值是在BaseHandler中进行预解析的
+		imageCodeId = self.json_args.get('piccode_id')
+		# print("image_id===============")
+		# print(Image_id)
+		if imageCode == Image_id:
+			print("iamge code true",imageCode)
+			data = {
+				"errcode":0,
+				"errmsg":'ok',
+			}
+		else:
+			data = {
+				"errcode":1,
+				"errmsg":"imagecode wrong"
+			}
+		self.write(data)
+
+
+
+
+
+################注册验证功能################################
+class Register_verity(BaseHandler):
+	# def post(self):
+	# 	mobile = self.json_args.get('mobile')
+	# 	imagecode = self.json_args.get('imagecode')
+	pass

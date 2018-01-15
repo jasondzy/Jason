@@ -19,8 +19,8 @@ function generateUUID() {
 }
 
 function generateImageCode() {
-    var picId = generateUUID();
-    $(".image-code img").attr("src", "/api/piccode?pre="+imageCodeId+"&cur="+picId);
+    var picId = generateUUID();  //如下是javascript通过动态的修改src的路劲来达到修改验证码图片的目的，这里也说明了img中的src后接的路劲是可以动态的修改的从而达到修改img的目的
+    $(".image-code img").attr("src", "/api/piccode?pre="+imageCodeId+"&cur="+picId);//当然这里的路劲并没有变，这是在/api/piccode下的处理函数中通过调用self.write来实现每次写入的数据不同，从这里也可以说明src的参数使用的是GET方法
     imageCodeId = picId;
 }
 
@@ -212,33 +212,5 @@ $(document).ready(function() {
 //         x.value
 //         dict[x.name] = x.value
 //     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 })
