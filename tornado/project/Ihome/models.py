@@ -29,6 +29,14 @@ class HandleMysql(object):
 
 		return result
 
+	def insert_into_tbl(self, sql):
+		try:
+			self.cursor.execute(sql)
+		except Exception as e:
+			raise(e)
+		else:
+			self.db.commit()
+
 	def close_mysql():
 		self.cursor.close()
 		self.db.close()

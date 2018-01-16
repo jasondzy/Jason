@@ -9,7 +9,7 @@ from tornado.web import url, StaticFileHandler
 
 tornado.options.define('port', default=8000, type=int, help=' runserver on given port')
 
-
+ 
 class Application(tornado.web.Application):
 	def __init__(self):
 		self.mysql = models.HandleMysql()
@@ -21,6 +21,7 @@ class Application(tornado.web.Application):
 		url(r'^/register$', Handlers.House_register, dict(database = self.mysql), name="House_register"),
 		url(r'^/api/piccode$', Handlers.PicCodeHandler, dict(database = self.mysql), name="PicCodeHandler"),
 		url(r'^/api/smscode$', Handlers.Smscode, dict(database = self.mysql), name="Smscode"),
+		url(r'^/api/register$', Handlers.Register_verity, dict(database = self.mysql), name="Register_verity"),
 		url(r'/(.*)',StaticFileHandler, {"path":os.path.join(os.path.dirname(__file__),"template"), "default_filename":"index.html"}, name="index"),
 		],
 		debug = True, 

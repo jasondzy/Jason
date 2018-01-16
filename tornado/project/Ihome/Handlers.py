@@ -10,6 +10,7 @@ class BaseHandler(tornado.web.RequestHandler):
 
 	def prepare(self):
 		"""预解析json数据"""  #这里判断请求的类型是否是json类型
+		print(self.request.body)
 		if self.request.headers.get("Content-Type", "").startswith("application/json"):
 			self.json_args = json.loads(self.request.body.decode("utf-8"))  #对body中的json数据进行解析成字典的类型，lods是解析，dumps是翻译成json类
 		else:
@@ -94,7 +95,25 @@ class Smscode(BaseHandler):
 
 ################注册验证功能################################
 class Register_verity(BaseHandler):
-	# def post(self):
-	# 	mobile = self.json_args.get('mobile')
-	# 	imagecode = self.json_args.get('imagecode')
-	pass
+	def post(self):
+		mobile = self.json_args.get('mobile')
+		phoneCode = self.json_args.get('phonecode')
+		passwd = self.json_args.get('password')
+		passwd2 = self.json_args.get('password2')
+		# print(mobile,phoneCode,passwd,passwd2)
+		
+		#############这里暂时留作空白作为验证手机的验证码是否正确####
+		#if 
+
+		#######将手机号和密码存入数据库中去####################
+		sql = "insert into ih_user_profile(up_name,up_mobile,up_passwd) values(%s,%s,%s)"%(mobile, mobile, passwd)
+		# print(sql)
+		self.database.insert_into_tbl(sql)
+
+		###########返回状态码给到js端##########################
+		data = {
+			'errcode':0,
+			'errmsg':'ok'
+		}
+
+		self.write(data)
