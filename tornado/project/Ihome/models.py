@@ -69,6 +69,11 @@ class HandRedis(object):
 		result = self.redisInstance.set(key, value)
 		print(result)
 
+	def get_value(self, key):
+		result = self.redisInstance.get(key)
+		print(result)
+		return result
+
 	def set_expire(self, key, date):
 		result = self.redisInstance.expire(key, date)
 		print(result)

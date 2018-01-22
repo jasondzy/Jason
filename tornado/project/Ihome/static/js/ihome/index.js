@@ -60,6 +60,7 @@ function goToSearchPage(th) {
 $(document).ready(function(){
     $.get("/api/check_login", function(data) {
         if ("0" == data.errcode) {
+            console.log(data.data.name)
             $(".top-bar>.user-info>.user-name").html(data.data.name);
             $(".top-bar>.user-info").show();
         } else {

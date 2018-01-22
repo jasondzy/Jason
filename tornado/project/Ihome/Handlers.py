@@ -49,6 +49,39 @@ class House_index(BaseHandler):
 		self.set_header("Content-Type", "application/json; charset=UTF-8") #设置传输类型的头部为 json类型，若是不设置可能会出错
 		# self.write('ok') #以上的这么多设置主要是针对$ajax类型的数据请求，因为javascript擅长解析的是json类型数据
 
+#############这里实现的是一个检查用户是否登录的功能 ########
+class Check_login(BaseHandler):
+	def get(self):
+		session_id = self.get_secure_cookie('session_id')
+		user_data = {}
+		if session_id == None:
+			print("session_id cookie do not exist")
+			data = {
+				"errcode":1,
+				"data":None,
+			}
+		else:
+			value = self.redis.get_value(session_id)
+			if value == None:
+				print("session_id do not exist in redis")
+				data = {
+				"errcode":1,
+				"data":None,
+				}
+			else:
+				print(" login user:", value)
+				user_data['name'] = value.decode("utf-8")
+				# user_data = json.dumps(user_data)
+				data = {
+					"errcode":0,
+					"data":user_data,
+				}
+
+		self.write(data)
+		self.set_header("Content-Type", "application/json; charset=UTF-8")
+
+############# 这里实现的是注册的主页面显示功能 ############
+
 class House_register(BaseHandler):
 	def get(self):
 		print("register============")
@@ -93,10 +126,7 @@ class Smscode(BaseHandler):
 				"errmsg":"imagecode wrong"
 			}
 		self.write(data)
-
-
-
-
+		self.set_header("Content-Type", "application/json; charset=UTF-8")
 
 ################注册验证功能################################
 class Register_verity(BaseHandler):
@@ -144,9 +174,9 @@ class Register_verity(BaseHandler):
 		####### 将注册成功后的用户写入session 机制 ############
 		#这里生成一个独一无二的session_id号
 			session_id = str(base64.b64encode(uuid.uuid4().bytes + uuid.uuid4().bytes))
-			self.set_secure_cookie("session_id", session_id)
-			self.redis.set_value("session_id", str(mobile))
-			self.redis.set_expire("session_id", 3600)
+			self.set_secure_cookie("session_id", session_id, expires_days=1)
+			self.redis.set_value(session_id, str(mobile))
+			self.redis.set_expire(session_id, 360)
 		###########返回状态码给到js端##########################
 			data = {
 				'errcode':'0',
@@ -161,4 +191,47 @@ class Register_verity(BaseHandler):
 class Login_verity(BaseHandler):
 	def post(self):
 		mobile = self.json_args.get('mobile')
-		passwd = self.json_args.get('mobile')
+		passwd = self.json_args.get('password')
+
+		################# 从mysql数据库中查询是否存在该手机号 ###########
+		sql = "select up_passwd from ih_user_profile where up_mobile=%s"%mobile
+		result = self.database.get_values_from_mysql(sql)
+		# print("result=====",result)
+		if len(result) == 0:
+			print(" mobile dot exist please register")
+			data = {
+				'errcode':'1',
+				'errmsg':'do not exist'
+			}
+			self.write(data)
+			self.set_header("Content-Type", "application/json; charset=UTF-8")
+		else:
+			############ 对输入的密码进行加密后和数据库中的密码进行比较 ####
+			s1 = sha1()
+			s1.update(passwd.encode("utf-8"))
+			password = s1.hexdigest()
+			############# end #########################################
+			# print("password===== result======",password,result[0])
+
+			if password != result[0][0]:
+				print("password wrong")
+				data = {
+				'errcode':'1',
+				'errmsg':'password wrong'
+				}
+				self.write(data)
+				self.set_header("Content-Type", "application/json; charset=UTF-8")
+			else:
+				print(" login sucess")
+				#############这里设置 session 功能######################
+				session_id = str(base64.b64encode(uuid.uuid4().bytes + uuid.uuid4().bytes))
+				self.set_secure_cookie("session_id", session_id, expires_days=1)
+				self.redis.set_value(session_id, str(mobile))
+				self.redis.set_expire(session_id, 360)
+				############# end #####################################
+				data = {
+				'errcode':'0',
+				'errmsg':'login sucess'
+				}
+				self.write(data)
+				self.set_header("Content-Type", "application/json; charset=UTF-8")
