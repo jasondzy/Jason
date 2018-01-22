@@ -105,6 +105,7 @@ function sendSMSCode() {
 
 $(document).ready(function() {
     generateImageCode();
+    console.log("111111111")
     $("#mobile").focus(function(){
         $("#mobile-err").hide();
     });
@@ -170,11 +171,21 @@ $(document).ready(function() {
                 "X-XSRFTOKEN": getCookie("_xsrf"),
             },
             success: function (data) {
+                console.log("start");
+                console.log(data.errmsg);
                 if ("0" == data.errcode) {
                     location.href = "/";
                 } else if ("验证码过期" == data.errmsg || "验证码错误" == data.errmsg) {
                     $("#phone-code-err>span").html(data.errmsg);
                     $("#phone-code-err").show();
+                } else if ("mobile number existed" == data.errmsg ){
+                    console.log("mobile");
+                    $("#mobile-err span").html("手机号已经存在，请重新输入");
+                    $("#mobile-err").show();
+                } else if ("password mismatch" == data.errmsg){
+                    console.log("passwd");
+                    $("#password2-err span").html("两次密码不一致!");
+                    $("#password2-err").show();
                 }
 
             }

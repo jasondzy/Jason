@@ -1,21 +1,26 @@
 import tornado.web
 import json
 import models
+from hashlib import sha1
+import base64, uuid
 from utils.captcha.captcha import captcha
 
 Image_id = "1111"
 class BaseHandler(tornado.web.RequestHandler):
-	def initialize(self, database):
+	def initialize(self, database, database_redis):
 		self.database = database
+		self.redis = database_redis
 
 	def prepare(self):
 		"""预解析json数据"""  #这里判断请求的类型是否是json类型
+		self.xsrf_token
 		print(self.request.body)
 		if self.request.headers.get("Content-Type", "").startswith("application/json"):
 			self.json_args = json.loads(self.request.body.decode("utf-8"))  #对body中的json数据进行解析成字典的类型，lods是解析，dumps是翻译成json类
 		else:
 			self.json_args = {}
 
+###################这里实现一个主页处理函数#########################################
 class House_index(BaseHandler):
 	def get(self):
 		print('================================')
@@ -101,19 +106,59 @@ class Register_verity(BaseHandler):
 		passwd = self.json_args.get('password')
 		passwd2 = self.json_args.get('password2')
 		# print(mobile,phoneCode,passwd,passwd2)
+
+		################这里用来判断手机号是否已经注册了###########
+		sql = "select up_name from ih_user_profile where up_mobile='%s'"%mobile
+		result = self.database.get_values_from_mysql(sql)
+		print("#############",result)
+		if len(result) != 0:
+			print("mobile number existed")
+			data = {
+			'errcode':'1',
+			'errmsg':'mobile number existed'
+			}
+			self.write(data)
+			self.set_header("Content-Type", "application/json; charset=UTF-8")
+		################这里判断两次输入的密码是否一致
+		elif passwd != passwd2:
+			data = {  
+			'errcode':'1',
+			'errmsg':'password mismatch'
+			}
+			self.write(data)
+			self.set_header("Content-Type", "application/json; charset=UTF-8")
+		else:
+		#############这里对密码进行加密处理#####################
+			s1 = sha1()
+			s1.update(passwd.encode("utf-8"))
+			password = s1.hexdigest()
 		
 		#############这里暂时留作空白作为验证手机的验证码是否正确####
-		#if 
+			#if 
 
 		#######将手机号和密码存入数据库中去####################
-		sql = "insert into ih_user_profile(up_name,up_mobile,up_passwd) values(%s,%s,%s)"%(mobile, mobile, passwd)
-		# print(sql)
-		self.database.insert_into_tbl(sql)
+			sql = "insert into ih_user_profile(up_name,up_mobile,up_passwd) values('%s','%s','%s')"%(mobile, mobile, password)
+			print(sql)
+			self.database.insert_into_tbl(sql)
 
+		####### 将注册成功后的用户写入session 机制 ############
+		#这里生成一个独一无二的session_id号
+			session_id = str(base64.b64encode(uuid.uuid4().bytes + uuid.uuid4().bytes))
+			self.set_secure_cookie("session_id", session_id)
+			self.redis.set_value("session_id", str(mobile))
+			self.redis.set_expire("session_id", 3600)
 		###########返回状态码给到js端##########################
-		data = {
-			'errcode':0,
-			'errmsg':'ok'
-		}
+			data = {
+				'errcode':'0',
+				'errmsg':'ok'
+			}
 
-		self.write(data)
+			self.write(data)
+			self.set_header("Content-Type", "application/json; charset=UTF-8")
+
+
+###############################登陆处理功能###################################
+class Login_verity(BaseHandler):
+	def post(self):
+		mobile = self.json_args.get('mobile')
+		passwd = self.json_args.get('mobile')
