@@ -43,6 +43,16 @@ class HandleMysql(object):
 			raise(e)
 		else:
 			self.db.commit()
+		return True
+
+	def update_tbl(self, sql):
+		try:
+			self.cursor.execute(sql)
+		except Exception as e:
+			raise(e)
+		else:
+			self.db.commit()
+		return True
 
 	def close_mysql():
 		self.cursor.close()

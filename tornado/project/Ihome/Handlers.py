@@ -4,6 +4,7 @@ import models
 from hashlib import sha1
 import base64, uuid
 from utils.captcha.captcha import captcha
+from utils.commons import required_login
 
 Image_id = "1111"
 class BaseHandler(tornado.web.RequestHandler):
@@ -19,6 +20,18 @@ class BaseHandler(tornado.web.RequestHandler):
 			self.json_args = json.loads(self.request.body.decode("utf-8"))  #对body中的json数据进行解析成字典的类型，lods是解析，dumps是翻译成json类
 		else:
 			self.json_args = {}
+
+	def get_current_user(self):
+		session_id = self.get_secure_cookie('session_id')
+		if session_id == None:
+			print(" not login!!!")
+			return None
+		value = self.redis.get_value(session_id)
+		if value == None or len(value) == 0:
+			print("not login!!!")
+			return None
+
+		return value
 
 ###################这里实现一个主页处理函数#########################################
 class House_index(BaseHandler):
@@ -62,7 +75,9 @@ class Check_login(BaseHandler):
 			}
 		else:
 			value = self.redis.get_value(session_id)
-			if value == None:
+			sql = 'select up_name from ih_user_profile where up_mobile="%s" '%value.decode("utf-8")
+			result = self.database.get_values_from_mysql(sql)
+			if result == None or len(result)==0:
 				print("session_id do not exist in redis")
 				data = {
 				"errcode":1,
@@ -70,7 +85,7 @@ class Check_login(BaseHandler):
 				}
 			else:
 				print(" login user:", value)
-				user_data['name'] = value.decode("utf-8")
+				user_data['name'] = result
 				# user_data = json.dumps(user_data)
 				data = {
 					"errcode":0,
@@ -149,7 +164,7 @@ class Register_verity(BaseHandler):
 			}
 			self.write(data)
 			self.set_header("Content-Type", "application/json; charset=UTF-8")
-		################这里判断两次输入的密码是否一致
+		################这里判断两次输入的密码是否一致###########
 		elif passwd != passwd2:
 			data = {  
 			'errcode':'1',
@@ -197,7 +212,7 @@ class Login_verity(BaseHandler):
 		sql = "select up_passwd from ih_user_profile where up_mobile=%s"%mobile
 		result = self.database.get_values_from_mysql(sql)
 		# print("result=====",result)
-		if len(result) == 0:
+		if result == None or len(result) == 0:
 			print(" mobile dot exist please register")
 			data = {
 				'errcode':'1',
@@ -235,3 +250,63 @@ class Login_verity(BaseHandler):
 				}
 				self.write(data)
 				self.set_header("Content-Type", "application/json; charset=UTF-8")
+
+#############################个人信息处理################################
+
+class Personal_info(BaseHandler):
+	@required_login
+	def get(self):
+		session_id = self.get_secure_cookie("session_id")
+		# print("session_id===",session_id)
+		mobile = self.redis.get_value(session_id).decode("utf-8")
+		# print("mobile=====",mobile)
+		sql = "select up_name from ih_user_profile where up_mobile=%s"%mobile
+		result = self.database.get_values_from_mysql(sql)
+		# print("name====",result)
+		if result == None or len(result) == 0: 
+			print("can not search name")
+			self.write(dict(errcode="4101", errmsg="用户未登录"))
+		user_data = { 
+			"name":result,
+			"mobile":mobile,
+			"avatar":"##"
+		}
+
+		data = {
+			"errcode":"0",
+			"data":user_data,
+		}
+
+		self.write(data)
+		self.set_header("Content-Type", "application/json; charset=UTF-8")
+
+######################### 这里用来处理用户上传的头像信息 #############
+#####待处理---这里使用的技术栈是 七牛
+
+
+##########################处理用户修改用户名#########################
+class Personal_name(BaseHandler):
+	def post(self):
+		user_name = self.json_args.get('name')
+		# print('user_name====',user_name)
+		################# 获取当前登录的用户id ######################
+		session_id = self.get_secure_cookie("session_id")
+		# print("session_id===",session_id)
+		mobile = self.redis.get_value(session_id).decode("utf-8")
+		sql = 'update ih_user_profile set up_name="%s" where up_mobile="%s" '%(user_name, mobile)
+		# print(sql)
+		result = self.database.update_tbl(sql)
+		if result != True:
+			print(" update sql failed ")
+			return 0
+		else:
+			print(" update sql sucess ")
+
+			data = {
+				"errcode":"0",
+			}
+
+			self.write(data)
+			self.set_header("Content-Type", "application/json; charset=UTF-8")
+
+

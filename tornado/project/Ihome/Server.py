@@ -32,6 +32,8 @@ class Application(tornado.web.Application):
 		url(r'^/api/register$', Handlers.Register_verity, dict(database = self.mysql, database_redis = self.redis), name="Register_verity"),
 		url(r'^/api/login$', Handlers.Login_verity, dict(database = self.mysql, database_redis = self.redis), name="database = self.mysql"),
 		url(r'^/api/check_login$', Handlers.Check_login, dict(database = self.mysql, database_redis = self.redis), name="Check_login"),
+		url(r'^/api/profile$', Handlers.Personal_info, dict(database = self.mysql, database_redis = self.redis), name="Personal_info"),
+		url(r'^/api/profile/name$', Handlers.Personal_name, dict(database = self.mysql, database_redis = self.redis), name="Personal_name"),
 		url(r'/(.*)',StaticFileHandler, {"path":os.path.join(os.path.dirname(__file__),"template"), "default_filename":"index.html"}, name="index"),
 		],
 		################# end ########################

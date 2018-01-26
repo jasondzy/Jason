@@ -12,6 +12,8 @@ $(document).ready(function(){
             location.href = "/login.html";
         }
         else if ("0" == data.errcode) {
+            console.log(data.data.name)
+            console.log(data.data.mobile)
             $("#user-name").html(data.data.name);
             $("#user-mobile").html(data.data.mobile);
             if (data.data.avatar) {
