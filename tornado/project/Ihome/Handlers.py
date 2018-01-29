@@ -269,7 +269,7 @@ class Personal_info(BaseHandler):
 		user_data = { 
 			"name":result,
 			"mobile":mobile,
-			"avatar":"##"
+			"avatar":"/static/images/landlord01.jpg"
 		}
 
 		data = {
@@ -279,10 +279,6 @@ class Personal_info(BaseHandler):
 
 		self.write(data)
 		self.set_header("Content-Type", "application/json; charset=UTF-8")
-
-######################### 这里用来处理用户上传的头像信息 #############
-#####待处理---这里使用的技术栈是 七牛
-
 
 ##########################处理用户修改用户名#########################
 class Personal_name(BaseHandler):
@@ -309,4 +305,45 @@ class Personal_name(BaseHandler):
 			self.write(data)
 			self.set_header("Content-Type", "application/json; charset=UTF-8")
 
+######################### 这里用来处理用户上传的头像信息 #############
+#####---这里使用的技术栈是直接保存在了服务器/static/images/personal_images中
+#####---这里可使用七牛技术存储到远程服务器上(由于账号实名问题，七牛账号暂时不可用)
+class Personal_img(BaseHandler):
+	def post(self):
+		################# 获取当前登录的用户id ######################
+		session_id = self.get_secure_cookie("session_id")
+		# print("session_id===",session_id)
+		mobile = self.redis.get_value(session_id).decode("utf-8")
+		print("test_test======")
+		files = self.request.files
+		image_file = files.get("avatar")
+		if image_file:
+			file_name = image_file[0]["filename"]
+			# print("filename=====", file_name)
+			image = image_file[0]["body"]
 
+			file_path = './static/images/personal_images/' + mobile + file_name
+			file = open(file_path, 'wb')
+			file.write(image)
+
+			file.close()
+
+			data = {
+				'errcode':'0',
+				'data':file_path,
+			}
+
+			############## 这里需要添加将图片路径保存在mysql的功能#####
+			sql = 'update ih_user_profile set up_avatar="%s" where up_mobile="%s" '%(file_path, mobile)
+			to do
+			#待明日完成
+
+		else:
+			data = {
+				'errcode':'4001',
+				'data':"/static/images/landlord01.jpg",
+			}
+
+		self.write(data)
+		self.set_header("Content-Type", "application/json; charset=UTF-8")
+		
