@@ -35,6 +35,7 @@ class Application(tornado.web.Application):
 		url(r'^/api/profile$', Handlers.Personal_info, dict(database = self.mysql, database_redis = self.redis), name="Personal_info"),
 		url(r'^/api/profile/name$', Handlers.Personal_name, dict(database = self.mysql, database_redis = self.redis), name="Personal_name"),
 		url(r'^/api/profile/avatar$', Handlers.Personal_img, dict(database = self.mysql, database_redis = self.redis), name="Personal_img"),
+		url(r'^/api/house/info$', Handlers.House_info, dict(database = self.mysql, database_redis = self.redis), name="House_info"),
 		url(r'/(.*)',StaticFileHandler, {"path":os.path.join(os.path.dirname(__file__),"template"), "default_filename":"index.html"}, name="index"),
 		],
 		################# end ########################

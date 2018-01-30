@@ -15,7 +15,7 @@ class BaseHandler(tornado.web.RequestHandler):
 	def prepare(self):
 		"""预解析json数据"""  #这里判断请求的类型是否是json类型
 		self.xsrf_token
-		print(self.request.body)
+		# print(self.request.body)
 		if self.request.headers.get("Content-Type", "").startswith("application/json"):
 			self.json_args = json.loads(self.request.body.decode("utf-8"))  #对body中的json数据进行解析成字典的类型，lods是解析，dumps是翻译成json类
 		else:
@@ -260,16 +260,23 @@ class Personal_info(BaseHandler):
 		# print("session_id===",session_id)
 		mobile = self.redis.get_value(session_id).decode("utf-8")
 		# print("mobile=====",mobile)
-		sql = "select up_name from ih_user_profile where up_mobile=%s"%mobile
+		sql = "select up_name,up_avatar from ih_user_profile where up_mobile=%s"%mobile
 		result = self.database.get_values_from_mysql(sql)
 		# print("name====",result)
 		if result == None or len(result) == 0: 
 			print("can not search name")
 			self.write(dict(errcode="4101", errmsg="用户未登录"))
-		user_data = { 
-			"name":result,
+
+		print("result[0][1]======", result[0][1])
+		if result[0][1] == None:
+			image_path = "/static/images/landlord01.jpg"
+		else:
+			image_path = result[0][1]
+
+		user_data = {
+			"name":result[0][0],
 			"mobile":mobile,
-			"avatar":"/static/images/landlord01.jpg"
+			"avatar":image_path
 		}
 
 		data = {
@@ -322,7 +329,7 @@ class Personal_img(BaseHandler):
 			# print("filename=====", file_name)
 			image = image_file[0]["body"]
 
-			file_path = './static/images/personal_images/' + mobile + file_name
+			file_path = './static/images/personal_images/' + mobile# + "." + ".".join(file_name.split(".")[1:])
 			file = open(file_path, 'wb')
 			file.write(image)
 
@@ -335,8 +342,10 @@ class Personal_img(BaseHandler):
 
 			############## 这里需要添加将图片路径保存在mysql的功能#####
 			sql = 'update ih_user_profile set up_avatar="%s" where up_mobile="%s" '%(file_path, mobile)
-			to do
-			#待明日完成
+			result = self.database.update_tbl(sql)
+			if result != True:
+				print(" update sql failed ")
+				return 0
 
 		else:
 			data = {
@@ -346,4 +355,10 @@ class Personal_img(BaseHandler):
 
 		self.write(data)
 		self.set_header("Content-Type", "application/json; charset=UTF-8")
-		
+
+######################## 房屋信息显示 #######################
+class House_info(BaseHandler):
+	def get(self):
+		house_id = self.get_query_argument('house_id')
+		# print(house_id)
+
