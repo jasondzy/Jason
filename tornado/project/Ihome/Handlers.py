@@ -66,6 +66,7 @@ class House_index(BaseHandler):
 class Check_login(BaseHandler):
 	def get(self):
 		session_id = self.get_secure_cookie('session_id')
+		print("session_id======",session_id)
 		user_data = {}
 		if session_id == None:
 			print("session_id cookie do not exist")
@@ -190,6 +191,7 @@ class Register_verity(BaseHandler):
 		#这里生成一个独一无二的session_id号
 			session_id = str(base64.b64encode(uuid.uuid4().bytes + uuid.uuid4().bytes))
 			self.set_secure_cookie("session_id", session_id, expires_days=1)
+		#这里将存在cookie中的session_id存放到redis中，这样就可以通过cookie来在redis中进行数据查询	
 			self.redis.set_value(session_id, str(mobile))
 			self.redis.set_expire(session_id, 360)
 		###########返回状态码给到js端##########################
@@ -267,7 +269,7 @@ class Personal_info(BaseHandler):
 			print("can not search name")
 			self.write(dict(errcode="4101", errmsg="用户未登录"))
 
-		print("result[0][1]======", result[0][1])
+		# print("result[0][1]======", result[0][1])
 		if result[0][1] == None:
 			image_path = "/static/images/landlord01.jpg"
 		else:
@@ -289,6 +291,7 @@ class Personal_info(BaseHandler):
 
 ##########################处理用户修改用户名#########################
 class Personal_name(BaseHandler):
+	@required_login
 	def post(self):
 		user_name = self.json_args.get('name')
 		# print('user_name====',user_name)
@@ -316,6 +319,7 @@ class Personal_name(BaseHandler):
 #####---这里使用的技术栈是直接保存在了服务器/static/images/personal_images中
 #####---这里可使用七牛技术存储到远程服务器上(由于账号实名问题，七牛账号暂时不可用)
 class Personal_img(BaseHandler):
+	@required_login
 	def post(self):
 		################# 获取当前登录的用户id ######################
 		session_id = self.get_secure_cookie("session_id")
@@ -358,7 +362,101 @@ class Personal_img(BaseHandler):
 
 ######################## 房屋信息显示 #######################
 class House_info(BaseHandler):
+	@required_login
 	def get(self):
 		house_id = self.get_query_argument('house_id')
-		# print(house_id)
+		print(house_id)
+		########### 获取房屋信息 #########################
+		session_id = self.get_secure_cookie("session_id")
+		mobile = self.redis.get_value(session_id).decode("utf-8")
+
+		# 校验参数，判断传入的house_id是否正确
+		if not house_id:
+			return self.write(dict(errcode=RET.PARAMERR, errmsg="缺少参数"))
+
+		# 这里可以添加从redis缓存中获取这些房屋信息，这样就避免了进行多次查询数据的操作
+		# 这里以待加入功能
+		# TODO
+
+		# 查询数据库
+
+		# 查询房屋基本信息
+		sql = "select hi_title,hi_price,hi_address,hi_room_count,hi_acreage,hi_house_unit,hi_capacity,hi_beds," \
+			  "hi_deposit,hi_min_days,hi_max_days,up_name,up_avatar,hi_user_id " \
+			  "from ih_house_info inner join ih_user_profile on hi_user_id=up_user_id where hi_house_id=%s"%house_id
+
+		ret = self.database.get_values_from_mysql(sql)
+		print("result=======", ret)
+		# 用户查询的可能是不存在的房屋id, 此时ret为None
+		if not ret:
+			return self.write(dict(errcode=RET.NODATA, errmsg="查无此房"))
+
+		data = {
+			"hid":house_id,
+			"user_id":ret[0][13],
+			"title":ret[0][0],
+			"price":ret[0][1],
+			"address":ret[0][2],
+			"room_count":ret[0][3],
+			"acreage":ret[0][4],
+			"unit":ret[0][5],
+			"capacity":ret[0][6],
+			"beds":ret[0][7],
+			"deposit":ret[0][8],
+			"min_days":ret[0][9],
+			"max_days":ret[0][10],
+			"user_name":ret[0][11],
+			"user_avatar":ret[0][12]
+		}
+
+		print("data===========",data)
+
+		# 查询房屋的图片信息
+		sql = "select hi_url from ih_house_image where hi_house_id=%s"%house_id
+		ret = self.database.get_values_from_mysql(sql)
+		print("image=============",ret)
+
+		# 如果查询到的图片
+		images = []
+		if ret:
+			for image in ret:
+				images.append(image[0])
+		data["images"] = images
+
+		# 查询房屋的基本设施
+		sql = "select hf_facility_id from ih_house_facility where hf_house_id=%s"%house_id
+		ret = self.database.get_values_from_mysql(sql)
+
+		# 如果查询到设施
+		facilities = []
+		if ret:
+			for facility in ret:
+				facilities.append(facility[0])
+		data["facilities"] = facilities
+
+		# 查询评论信息
+		sql = "select oi_comment,up_name,oi_utime,up_mobile from ih_order_info inner join ih_user_profile " \
+			  "on oi_user_id=up_user_id where oi_house_id=%s and oi_status=4 and oi_comment is not null"%house_id
+
+		ret = self.database.get_values_from_mysql(sql)
+		comments = []
+		if ret:
+			for comment in ret:
+				comments.append(dict(
+					user_name = comment[1] if comment[1] != comment[3] else "匿名用户",
+					content = comment[0],
+					ctime = comment[2].strftime("%Y-%m-%d %H:%M:%S")
+				))
+		data["comments"] = comments
+
+		# 存入到redis中
+		json_data = json.dumps(data)
+
+		## 可以在此处将上边查询到的这么多数据存储到redis中，这样下次查询的时候就能加快查询步骤
+		#TODO
+
+		resp = '{"errcode":"0", "errmsg":"OK", "data":%s, "user_id":%s}' % (json_data, mobile)
+		# self.write(dict(errcode=RET.OK, errmsg="OK", data=data))
+		self.write(resp)
+
 
