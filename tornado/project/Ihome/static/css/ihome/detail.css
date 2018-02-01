@@ -6,7 +6,7 @@ body {
 }
 .top-bar {
     position: fixed;
-    width: 100%;
+    width: 77%;
     background-color: #eee;
     z-index: 2;
 }
@@ -180,7 +180,7 @@ body {
     display: none;
     position: fixed;
     bottom: 0px;
-    width: 100%;
+    width: 77%;
     height: 45px;
     line-height: 45px;
     font-size: 16px;

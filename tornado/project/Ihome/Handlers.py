@@ -66,7 +66,7 @@ class House_index(BaseHandler):
 class Check_login(BaseHandler):
 	def get(self):
 		session_id = self.get_secure_cookie('session_id')
-		print("session_id======",session_id)
+		# print("session_id======",session_id)
 		user_data = {}
 		if session_id == None:
 			print("session_id cookie do not exist")
@@ -76,22 +76,28 @@ class Check_login(BaseHandler):
 			}
 		else:
 			value = self.redis.get_value(session_id)
-			sql = 'select up_name from ih_user_profile where up_mobile="%s" '%value.decode("utf-8")
-			result = self.database.get_values_from_mysql(sql)
-			if result == None or len(result)==0:
-				print("session_id do not exist in redis")
+			if value == None:
 				data = {
 				"errcode":1,
 				"data":None,
 				}
 			else:
-				print(" login user:", value)
-				user_data['name'] = result
-				# user_data = json.dumps(user_data)
-				data = {
-					"errcode":0,
-					"data":user_data,
-				}
+				sql = 'select up_name from ih_user_profile where up_mobile="%s" '%value.decode("utf-8")
+				result = self.database.get_values_from_mysql(sql)
+				if result == None or len(result)==0:
+					print("session_id do not exist in redis")
+					data = {
+					"errcode":1,
+					"data":None,
+					}
+				else:
+					print(" login user:", value)
+					user_data['name'] = result
+					# user_data = json.dumps(user_data)
+					data = {
+						"errcode":0,
+						"data":user_data,
+					}
 
 		self.write(data)
 		self.set_header("Content-Type", "application/json; charset=UTF-8")
@@ -244,7 +250,7 @@ class Login_verity(BaseHandler):
 				session_id = str(base64.b64encode(uuid.uuid4().bytes + uuid.uuid4().bytes))
 				self.set_secure_cookie("session_id", session_id, expires_days=1)
 				self.redis.set_value(session_id, str(mobile))
-				self.redis.set_expire(session_id, 360)
+				self.redis.set_expire(session_id, 3600)
 				############# end #####################################
 				data = {
 				'errcode':'0',
