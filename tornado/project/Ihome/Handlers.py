@@ -392,7 +392,7 @@ class House_info(BaseHandler):
 			  "from ih_house_info inner join ih_user_profile on hi_user_id=up_user_id where hi_house_id=%s"%house_id
 
 		ret = self.database.get_values_from_mysql(sql)
-		print("result=======", ret)
+		# print("result=======", ret)
 		# 用户查询的可能是不存在的房屋id, 此时ret为None
 		if not ret:
 			return self.write(dict(errcode=RET.NODATA, errmsg="查无此房"))
@@ -415,12 +415,12 @@ class House_info(BaseHandler):
 			"user_avatar":ret[0][12]
 		}
 
-		print("data===========",data)
+		# print("data===========",data)
 
 		# 查询房屋的图片信息
 		sql = "select hi_url from ih_house_image where hi_house_id=%s"%house_id
 		ret = self.database.get_values_from_mysql(sql)
-		print("image=============",ret)
+		# print("image=============",ret)
 
 		# 如果查询到的图片
 		images = []
@@ -464,5 +464,31 @@ class House_info(BaseHandler):
 		resp = '{"errcode":"0", "errmsg":"OK", "data":%s, "user_id":%s}' % (json_data, mobile)
 		# self.write(dict(errcode=RET.OK, errmsg="OK", data=data))
 		self.write(resp)
+		self.set_header("Content-Type", "application/json; charset=UTF-8")
+
+
+############## 获取预定信息  /api/house/info ########################################
+class House_reserve(BaseHandler):
+	def post(self):
+		house_id = self.json_args.get('house_id')
+		start_date = self.json_args.get('start_date')
+		end_date = self.json_args.get('end_date')
+		print('====',house_id,start_date,end_date)
+
+		sql = ' select oi_begin_date,oi_end_date from ih_order_info where oi_house_id=%s'%house_id
+		ret = self.database.get_values_from_mysql(sql)
+		if not ret:
+			print(' query order info error')
+			data = {
+				'errcode':'4101',
+			}
+		############ 这里添加对 html中传来的事件信息，和该house在order数据库中存在的时间内信息进行比较来判断所选择的时间段是否可预定
+
+		data = {
+			'errcode':'0'
+		}
+		self.write(data)
+		self.set_header('Content-Type', 'application/json; charset=UTF-8')
+
 
 
