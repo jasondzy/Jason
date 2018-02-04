@@ -233,6 +233,7 @@ class Login_verity(BaseHandler):
 			s1 = sha1()
 			s1.update(passwd.encode("utf-8"))
 			password = s1.hexdigest()
+			print('password=====',password)
 			############# end #########################################
 			# print("password===== result======",password,result[0])
 
@@ -490,5 +491,65 @@ class House_reserve(BaseHandler):
 		self.write(data)
 		self.set_header('Content-Type', 'application/json; charset=UTF-8')
 
+############### 处理显示订单信息 ##########################################
+class Show_order(BaseHandler):
+	@required_login
+	def get(self):
+		session_id = self.get_secure_cookie("session_id")
+		# print("session_id===",session_id)
+		mobile = self.redis.get_value(session_id).decode("utf-8")
+
+		sql = ' select up_user_id from ih_user_profile where up_mobile=%s'%mobile
+		ret = self.database.get_values_from_mysql(sql)
+		if not ret:
+			print('user_id doesr not exist')
+			data = {
+				'errcode':'1',
+			}
+		user_id = ret[0][0]
+		print('user_id======',user_id)
+
+		# 用户的身份，用户想要查询作为房客下的单，还是想要查询作为房东 被人下的单
+		role = self.get_query_argument("role", "")
+		try:
+			# 查询房东订单
+			if "landlord" == role:
+				sql = 'select oi_order_id,hi_title,hi_index_image_url,oi_begin_date,oi_end_date,oi_ctime,oi_days,oi_amount,oi_status,oi_comment from ih_order_info inner join ih_house_infoon oi_house_id=hi_house_id where hi_user_id=%s order by oi_ctime desc'%user_id
+				ret = self.database.get_values_from_mysql(sql)
+				if not ret:
+					print(' query order info fail')
+					data = {
+						'errcode':'1',
+					}
+
+			else:
+				sql = 'select oi_order_id,hi_title,hi_index_image_url,oi_begin_date,oi_end_date,oi_ctime,oi_days,oi_amount,oi_status,oi_comment from ih_order_info inner join ih_house_info on oi_house_id=hi_house_id where oi_user_id=%s order by oi_ctime desc'%user_id
+				ret = self.database.get_values_from_mysql(sql)
+				if not ret:
+					print(' query order info fail')
+					data = {
+						'errcode':'1',
+					}
+
+		except Exception as e:
+			logging.error(e)
+			return self.write({"errcode":'1', "errmsg":"get data error"})
+		orders = []
+		if ret:
+			for l in ret[0]:
+				order = {
+					"order_id":l[0],
+					"title":l[1],
+					"img_url":l[2],
+					"start_date":l[3].strftime("%Y-%m-%d"),
+					"end_date":l[4].strftime("%Y-%m-%d"),
+					"ctime":l[5].strftime("%Y-%m-%d"),
+					"days":l[6],
+					"amount":l[7],
+					"status":l[8],
+					"comment":l[9] if l[9] else ""
+				}
+				orders.append(order)
+		self.write({"errcode":'0', "errmsg":"OK", "orders":orders})
 
 
