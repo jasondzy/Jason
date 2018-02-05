@@ -1,6 +1,7 @@
 import tornado.web
 import json
 import models
+import logging
 from hashlib import sha1
 import base64, uuid
 from utils.captcha.captcha import captcha
@@ -369,6 +370,107 @@ class Personal_img(BaseHandler):
 
 ######################## 房屋信息显示 #######################
 class House_info(BaseHandler):
+	######### POST 处理的是房屋提交信息 ######################
+	@required_login
+	def post(self):
+		"""保存"""
+		# 获取参数
+		"""{
+			"title":"",
+			"price":"",
+			"area_id":"1",
+			"address":"",
+			"room_count":"",
+			"acreage":"",
+			"unit":"",
+			"capacity":"",
+			"beds":"",
+			"deposit":"",
+			"min_days":"",
+			"max_days":"",
+			"facility":["7","8"]
+		}"""
+		################# 获取当前登录的用户id ######################
+		session_id = self.get_secure_cookie("session_id")
+		# print("session_id===",session_id)
+		mobile = self.redis.get_value(session_id).decode("utf-8")
+		sql = 'select up_user_id from ih_user_profile where up_mobile="%s"'%mobile
+		ret = self.database.get_values_from_mysql(sql)
+
+		user_id = ret[0][0]
+		title = self.json_args.get("title")
+		price = self.json_args.get("price")
+		area_id = self.json_args.get("area_id")
+		address = self.json_args.get("address")
+		room_count = self.json_args.get("room_count")
+		acreage = self.json_args.get("acreage")
+		unit = self.json_args.get("unit")
+		capacity = self.json_args.get("capacity")
+		beds = self.json_args.get("beds")
+		deposit = self.json_args.get("deposit")
+		min_days = self.json_args.get("min_days")
+		max_days = self.json_args.get("max_days")
+		facility = self.json_args.get("facility") # 对一个房屋的设施，是列表类型
+		# 校验
+		if not all((title, price, area_id, address, room_count, acreage, unit, capacity, beds, deposit, min_days,
+					max_days)):
+			return self.write(dict(errcode='3', errmsg="缺少参数"))
+
+		try:
+			price = int(price) * 100
+			deposit = int(deposit) * 100
+		except Exception as e:
+			return self.write(dict(errcode='2', errmsg="参数错误"))
+
+		# 数据
+		try:
+			sql = "insert into ih_house_info(hi_user_id,hi_title,hi_price,hi_area_id,hi_address,hi_room_count," \
+				  "hi_acreage,hi_house_unit,hi_capacity,hi_beds,hi_deposit,hi_min_days,hi_max_days) " \
+				  "values(%s,%s,%s,%s,%s,%s,%s," \
+				  "%s,%s,%s,%s,%s,%s)"%(user_id, title, price, area_id, address, room_count, acreage, unit, capacity, beds, deposit, min_days, max_days)
+			# 对于insert语句，execute方法会返回最后一个自增id
+			self.database.insert_into_tbl(sql)
+		except Exception as e:
+			logging.error(e)
+			return self.write(dict(errcode='4', errmsg="save data error"))
+
+		sql = 'select hi_house_id from ih_house_info where hi_user_id=%s'%user_id
+		ret = self.database.get_values_from_mysql(sql)
+		house_id = ret[0][0]
+		print('house_id================',house_id)
+
+		try:
+			sql = "insert into ih_house_facility(hf_house_id,hf_facility_id) values"
+			sql_val = [] # 用来保存条目的(%s, %s)部分  最终的形式 ["(%s, %s)", "(%s, %s)"]
+			vals = []  # 用来保存的具体的绑定变量值
+			for facility_id in facility:
+				# sql += "(%s, %s)," 采用此种方式，sql语句末尾会多出一个逗号
+				sql_val.append("(%s, %s)")
+				vals.append(house_id)
+				vals.append(facility_id)
+
+			sql += ",".join(sql_val)
+			vals = tuple(vals)
+			sql += "%"
+			sql += str(vals)
+			logging.debug(sql)
+			logging.debug(vals)
+			self.database.insert_into_tbl(sql)
+		except Exception as e:
+			logging.error(e)
+			try:
+				sql = "delete from ih_house_info where hi_house_id=%s"%house_id
+				self.database.insert_into_tbl(sql)
+			except Exception as e:
+				logging.error(e)
+				return self.write(dict(errcode='4', errmsg="delete fail"))
+			else:
+				return self.write(dict(errcode='4', errmsg="no data save"))
+		# 返回
+		self.write(dict(errcode='0', errmsg="OK", house_id=house_id))
+
+
+	######### GET处理 的是获取房屋信息 ######################
 	@required_login
 	def get(self):
 		house_id = self.get_query_argument('house_id')
@@ -379,7 +481,7 @@ class House_info(BaseHandler):
 
 		# 校验参数，判断传入的house_id是否正确
 		if not house_id:
-			return self.write(dict(errcode=RET.PARAMERR, errmsg="缺少参数"))
+			return self.write(dict(errcode='3', errmsg="缺少参数"))
 
 		# 这里可以添加从redis缓存中获取这些房屋信息，这样就避免了进行多次查询数据的操作
 		# 这里以待加入功能
@@ -396,7 +498,7 @@ class House_info(BaseHandler):
 		# print("result=======", ret)
 		# 用户查询的可能是不存在的房屋id, 此时ret为None
 		if not ret:
-			return self.write(dict(errcode=RET.NODATA, errmsg="查无此房"))
+			return self.write(dict(errcode='2', errmsg="查无此房"))
 
 		data = {
 			"hid":house_id,
@@ -507,14 +609,14 @@ class Show_order(BaseHandler):
 				'errcode':'1',
 			}
 		user_id = ret[0][0]
-		print('user_id======',user_id)
+		# print('user_id======',user_id)
 
 		# 用户的身份，用户想要查询作为房客下的单，还是想要查询作为房东 被人下的单
 		role = self.get_query_argument("role", "")
 		try:
 			# 查询房东订单
 			if "landlord" == role:
-				sql = 'select oi_order_id,hi_title,hi_index_image_url,oi_begin_date,oi_end_date,oi_ctime,oi_days,oi_amount,oi_status,oi_comment from ih_order_info inner join ih_house_infoon oi_house_id=hi_house_id where hi_user_id=%s order by oi_ctime desc'%user_id
+				sql = 'select oi_order_id,hi_title,hi_index_image_url,oi_begin_date,oi_end_date,oi_ctime,oi_days,oi_amount,oi_status,oi_comment from ih_order_info inner join ih_house_info on oi_house_id=hi_house_id where hi_user_id=%s order by oi_ctime desc'%user_id
 				ret = self.database.get_values_from_mysql(sql)
 				if not ret:
 					print(' query order info fail')
@@ -535,8 +637,10 @@ class Show_order(BaseHandler):
 			logging.error(e)
 			return self.write({"errcode":'1', "errmsg":"get data error"})
 		orders = []
+		# print('ret========',ret[0][0])
 		if ret:
-			for l in ret[0]:
+			for l in ret:
+				# print('l[0]======',l)
 				order = {
 					"order_id":l[0],
 					"title":l[1],
@@ -552,4 +656,115 @@ class Show_order(BaseHandler):
 				orders.append(order)
 		self.write({"errcode":'0', "errmsg":"OK", "orders":orders})
 
+#################### 此处进行的是实名认证的功能 ############################
+class Real_name_verity(BaseHandler):
+	@required_login
+	def get(self):
+		session_id = self.get_secure_cookie("session_id")
+		# print("session_id===",session_id)
+		mobile = self.redis.get_value(session_id).decode("utf-8")
+		# print('mobile=======',mobile)
 
+		sql = ' select up_real_name,up_id_card from ih_user_profile where up_mobile="%s"'%mobile
+		ret = self.database.get_values_from_mysql(sql)
+
+		# print('ret=====',ret)
+		user_data = {
+			'real_name':ret[0][0],
+			'id_card':ret[0][1],
+		}
+		data = {
+			'errcode':'0',
+			'data':user_data,
+		}
+
+		print('data========',data)
+
+		self.write(data)
+		self.set_header("Content-Type", "application/json; charset=UTF-8")
+
+################# 修改当前用户的实名认证情况 #############################
+	@required_login
+	def post(self):
+		########### 获取当前用户的情况###################################
+		session_id = self.get_secure_cookie("session_id")
+		# print("session_id===",session_id)
+		mobile = self.redis.get_value(session_id).decode("utf-8")
+		# print('mobile=======',mobile)
+
+		real_name = self.json_args.get('real_name')
+		id_card = self.json_args.get('id_card')
+		# print('id_card=====',real_name, id_card)
+
+		sql = 'update ih_user_profile set up_real_name="%s", up_id_card="%s" where up_mobile="%s"'%(real_name, id_card, mobile)
+		ret = self.database.update_tbl(sql)
+		if not ret:
+			print('update real name fial')
+
+		data = {
+			'errcode':'0',
+		}
+
+		self.write(data)
+		self.set_header('Content-Type', 'application/json; charset=UTF-8')
+
+class Myhouse_show(BaseHandler):
+	@required_login
+	def get(self):
+		########### 获取当前用户的情况###################################
+		session_id = self.get_secure_cookie("session_id")
+		# print("session_id===",session_id)
+		mobile = self.redis.get_value(session_id).decode("utf-8")
+		# print('mobile=======',mobile)
+
+		sql = 'select up_user_id from ih_user_profile where up_mobile="%s"'%mobile
+		ret = self.database.get_values_from_mysql(sql)
+		user_id = ret[0][0]
+
+		try:
+			sql = "select a.hi_house_id,a.hi_title,a.hi_price,a.hi_ctime,b.ai_name,a.hi_index_image_url " \
+				  "from ih_house_info a inner join ih_area_info b on a.hi_area_id=b.ai_area_id where a.hi_user_id=%s"%user_id
+			ret = self.database.get_values_from_mysql(sql)
+		except Exception as e:
+			logging.error(e)
+			return self.write({"errcode":'1', "errmsg":"get data erro"})
+		houses = []
+		if ret:
+			for l in ret:
+				house = {
+					"house_id":l[0],
+					"title":l[1],
+					"price":l[2],
+					"ctime":l[3].strftime("%Y-%m-%d"), # 将返回的Datatime类型格式化为字符串
+					"area_name":l[4],
+					"img_url":l[5] if l[5] else ""
+				}
+				houses.append(house)
+		self.write({"errcode":'0', "errmsg":"OK", "houses":houses})
+		self.set_header('Content-Type', 'application/json; charset=UTF-8')
+
+class Area_info_handler(BaseHandler):
+	"""提供城区信息"""
+	@required_login
+	def get(self):
+
+		# 查询Mysql数据库，获取城区信息
+		sql = "select ai_area_id,ai_name from ih_area_info"
+
+		try:
+			ret =  self.database.get_values_from_mysql(sql)
+		except Exception as e:
+			logging.error(e)
+			return self.write(dict(errcode='1', errmsg="数据库查询出错"))
+		if not ret:
+			return self.write(dict(errcode='2', errmsg="没有数据"))
+		# 保存转换好的区域信息
+		data = []
+		for row in ret:
+			d = {
+				"area_id": row[0],
+				"name": row[1]
+			}
+			data.append(d)
+
+		self.write(dict(errcode='0', errmsg="OK", data=data))
