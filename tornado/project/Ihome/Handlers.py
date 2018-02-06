@@ -2,10 +2,12 @@ import tornado.web
 import json
 import models
 import logging
+import random
 from hashlib import sha1
 import base64, uuid
 from utils.captcha.captcha import captcha
 from utils.commons import required_login
+from libs.yuntongxun.SendTemplateSMS import ccp
 
 Image_id = "1111"
 class BaseHandler(tornado.web.RequestHandler):
@@ -137,17 +139,50 @@ class Smscode(BaseHandler):
 		imageCodeId = self.json_args.get('piccode_id')
 		# print("image_id===============")
 		# print(Image_id)
-		if imageCode == Image_id:
+		if imageCode.upper() == Image_id:
 			print("iamge code true",imageCode)
 			data = {
-				"errcode":0,
+				"errcode":'0',
 				"errmsg":'ok',
 			}
 		else:
 			data = {
-				"errcode":1,
+				"errcode":'1',
 				"errmsg":"imagecode wrong"
 			}
+
+		# 产生随机短信验证码
+		sms_code = "%06d" % random.randint(1, 1000000)
+		try:
+			self.redis.set_value("sms_code_%s" % mobile, sms_code)
+			self.redis.set_expire("sms_code_%s" % mobile, 360)
+		except Exception as e:
+			logging.error(e)
+			data = {
+				"errcode":'1',
+				"errmsg":"create Smscode fail"
+			}
+
+		# 发送短信验证码
+		try:
+			result = ccp.sendTemplateSMS(mobile, [sms_code, 1], 1)
+		except Exception as e:
+			logging.error(e)
+			data = {
+				"errcode":'1',
+				"errmsg":"send Smscode fail"
+			}
+		if result:
+			data = {
+				"errcode":'0',
+				"errmsg":"ok"
+			}
+		else:
+			data = {
+				"errcode":'1',
+				"errmsg":"send Smscode fail"
+			}
+
 		self.write(data)
 		self.set_header("Content-Type", "application/json; charset=UTF-8")
 
@@ -190,7 +225,8 @@ class Register_verity(BaseHandler):
 			#if 
 
 		#######将手机号和密码存入数据库中去####################
-			sql = "insert into ih_user_profile(up_name,up_mobile,up_passwd) values('%s','%s','%s')"%(mobile, mobile, password)
+			default_image_path = '/static/images/landlord01.jpg'
+			sql = "insert into ih_user_profile(up_name,up_mobile,up_passwd,up_avatar) values('%s','%s','%s','%s')"%(mobile, mobile, password, default_image_path)
 			print(sql)
 			self.database.insert_into_tbl(sql)
 
@@ -436,8 +472,8 @@ class House_info(BaseHandler):
 
 		sql = 'select hi_house_id from ih_house_info where hi_user_id=%s'%user_id
 		ret = self.database.get_values_from_mysql(sql)
-		house_id = ret[0][0]
-		print('house_id================',house_id)
+		house_id = ret[0][-1]
+		# print('house_id================',house_id)
 
 		try:
 			sql = "insert into ih_house_facility(hf_house_id,hf_facility_id) values"
@@ -445,14 +481,13 @@ class House_info(BaseHandler):
 			vals = []  # 用来保存的具体的绑定变量值
 			for facility_id in facility:
 				# sql += "(%s, %s)," 采用此种方式，sql语句末尾会多出一个逗号
-				sql_val.append("(%s, %s)")
-				vals.append(house_id)
-				vals.append(facility_id)
+				# sql_val.append("(%d, %s)")
+				vals.append(str((house_id,facility_id)))
+				# vals.append(facility_id)
 
-			sql += ",".join(sql_val)
-			vals = tuple(vals)
-			sql += "%"
-			sql += str(vals)
+			# sql += ",".join(sql_val)
+			sql += ",".join(vals)
+			# print('sql=============',sql)
 			logging.debug(sql)
 			logging.debug(vals)
 			self.database.insert_into_tbl(sql)
@@ -743,6 +778,7 @@ class Myhouse_show(BaseHandler):
 		self.write({"errcode":'0', "errmsg":"OK", "houses":houses})
 		self.set_header('Content-Type', 'application/json; charset=UTF-8')
 
+#################### 此处的作用是提供房源提交的时候的地区选择功能 #####################
 class Area_info_handler(BaseHandler):
 	"""提供城区信息"""
 	@required_login
@@ -768,3 +804,5 @@ class Area_info_handler(BaseHandler):
 			data.append(d)
 
 		self.write(dict(errcode='0', errmsg="OK", data=data))
+
+################ 此处的作用是处理在提交房源的时候的房屋图片提交#################
