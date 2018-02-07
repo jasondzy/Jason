@@ -9,19 +9,19 @@ import configparser
 import logging
 
 #主帐号
-accountSid= '8aaf0708568d4143015697b0f4960888';
+accountSid= '8a216da861033c5d016104e8276d00de';
 
 #主帐号Token
-accountToken= '42d3191f0e6745d6a9ddc6c795da0bed';
+accountToken= '9c203198980941d8b00ed2f85313b62f';
 
 #应用Id
-appId='8aaf0708568d4143015697b0f56e088f';
+appId='8a216da861033c5d016104e827d500e5';
 
 #请求地址，格式如下，不需要写http://
 serverIP='app.cloopen.com';
 
 #请求端口 
-serverPort='8883';
+serverPort=8883;
 
 #REST版本号
 softVersion='2013-12-26';
@@ -51,41 +51,43 @@ softVersion='2013-12-26';
 
 class CCP(object):
 
-    def __init__(self):
-        self.rest = REST(serverIP, serverPort, softVersion)
-        self.rest.setAccount(accountSid, accountToken)
-        self.rest.setAppId(appId)
+	def __init__(self):
+		self.rest = REST(serverIP, serverPort, softVersion)
+		self.rest.setAccount(accountSid, accountToken)
+		self.rest.setAppId(appId)
 
-    @staticmethod
-    def instance():
-        if not hasattr(CCP, "_instance"):
-            CCP._instance = CCP()
-        return CCP._instance
+	@staticmethod
+	def instance():
+		if not hasattr(CCP, "_instance"):
+			CCP._instance = CCP()
+		return CCP._instance
 
-    def sendTemplateSMS(self, to, datas, tempId):
-        try:
-            result = self.rest.sendTemplateSMS(to, datas, tempId)
-        except Exception as e:
-            logging.error(e)
-            raise e
+	def sendTemplateSMS(self, to, datas, tempId):  
+		try:
+			result = self.rest.sendTemplateSMS(to, datas, tempId)
+			print('result==============',result)
+			# result = self.rest.sendTemplateSMS('18621520861', ['123'], 1)
+		except Exception as e:
+			logging.error(e)
+			raise e
 
-        # print result
-        # for k, v in result.iteritems():
-        #     if k == 'templateSMS':
-        #         for k, s in v.iteritems():
-        #             print '%s:%s' % (k, s)
-        #     else:
-        #         print '%s:%s' % (k, v)
-        if result.get("statusCode") == "000000":
-            return True
-        else:
-            return False
+		# print result
+		# for k, v in result.iteritems():
+		#     if k == 'templateSMS':
+		#         for k, s in v.iteritems():
+		#             print '%s:%s' % (k, s)
+		#     else:
+		#         print '%s:%s' % (k, v)
+		if result.get("statusCode") == "000000":
+			return True
+		else:
+			return False
 
 ccp = CCP.instance()
 
 if __name__ == "__main__":
-    ccp = CCP.instance()
-    ccp.sendTemplateSMS("18516952650", ["1234", 5], 1)
+	ccp = CCP.instance()
+	ccp.sendTemplateSMS("18621520861", ["1234", 5], 1) 
 
 
 

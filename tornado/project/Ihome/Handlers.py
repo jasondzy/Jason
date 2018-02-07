@@ -163,6 +163,8 @@ class Smscode(BaseHandler):
 				"errmsg":"create Smscode fail"
 			}
 
+		print('sms_code========',sms_code)
+
 		# 发送短信验证码
 		try:
 			result = ccp.sendTemplateSMS(mobile, [sms_code, 1], 1)
@@ -199,7 +201,7 @@ class Register_verity(BaseHandler):
 		sql = "select up_name from ih_user_profile where up_mobile='%s'"%mobile
 		result = self.database.get_values_from_mysql(sql)
 		print("#############",result)
-		if len(result) != 0:
+		if len(result) == 0:
 			print("mobile number existed")
 			data = {
 			'errcode':'1',
@@ -222,7 +224,11 @@ class Register_verity(BaseHandler):
 			password = s1.hexdigest()
 		
 		#############这里暂时留作空白作为验证手机的验证码是否正确####
-			#if 
+			code = self.redis.get_value("sms_code_%s" % mobile)
+			# print(' redis code value',code.decode("utf-8"))
+			# print('phonecode=======',phoneCode)
+			if phoneCode == code.decode("utf-8"):
+				print('Smscode=======ok')
 
 		#######将手机号和密码存入数据库中去####################
 			default_image_path = '/static/images/landlord01.jpg'
