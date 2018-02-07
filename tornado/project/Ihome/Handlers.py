@@ -201,7 +201,7 @@ class Register_verity(BaseHandler):
 		sql = "select up_name from ih_user_profile where up_mobile='%s'"%mobile
 		result = self.database.get_values_from_mysql(sql)
 		print("#############",result)
-		if len(result) == 0:
+		if len(result) != 0:
 			print("mobile number existed")
 			data = {
 			'errcode':'1',
@@ -223,7 +223,7 @@ class Register_verity(BaseHandler):
 			s1.update(passwd.encode("utf-8"))
 			password = s1.hexdigest()
 		
-		#############这里暂时留作空白作为验证手机的验证码是否正确####
+		#############验证手机的验证码是否正确###################
 			code = self.redis.get_value("sms_code_%s" % mobile)
 			# print(' redis code value',code.decode("utf-8"))
 			# print('phonecode=======',phoneCode)
