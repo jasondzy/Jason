@@ -10,7 +10,7 @@ from tornado.web import url, StaticFileHandler
 
 tornado.options.define('port', default=8000, type=int, help=' runserver on given port')
 
- 
+
 class Application(tornado.web.Application):
 	def __init__(self):
 		################# create mysql object #######

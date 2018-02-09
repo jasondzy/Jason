@@ -182,7 +182,7 @@ class Smscode(BaseHandler):
 		else:
 			data = {
 				"errcode":'1',
-				"errmsg":"send Smscode fail"
+				"errmsg":"目前该短信注册功能采用的是云通讯的测试功能，只支持绑定的手机号发送验证码，此处其他手机可输入任意值即可"
 			}
 
 		self.write(data)
