@@ -30,5 +30,9 @@ $(document).ready(function(){
                 $(".book-house").show();
             }
         }
+        else if ("4101" == data.errcode) {
+                location.href = "/login.html";
+                    return;
+        }
     }, "json")
 })

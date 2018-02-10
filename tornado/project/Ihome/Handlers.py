@@ -139,51 +139,50 @@ class Smscode(BaseHandler):
 		imageCodeId = self.json_args.get('piccode_id')
 		# print("image_id===============")
 		# print(Image_id)
-		if imageCode.upper() == Image_id:
+		if imageCode.upper() != Image_id:
+			data = {
+				"errcode":'1',
+				"errmsg":"imagecode wrong"
+			}
+		else:
 			print("iamge code true",imageCode)
 			data = {
 				"errcode":'0',
 				"errmsg":'ok',
 			}
-		else:
-			data = {
-				"errcode":'1',
-				"errmsg":"imagecode wrong"
-			}
+			# 产生随机短信验证码
+			sms_code = "%06d" % random.randint(1, 1000000)
+			try:
+				self.redis.set_value("sms_code_%s" % mobile, sms_code)
+				self.redis.set_expire("sms_code_%s" % mobile, 360)
+			except Exception as e:
+				logging.error(e)
+				data = {
+					"errcode":'1',
+					"errmsg":"create Smscode fail"
+				}
 
-		# 产生随机短信验证码
-		sms_code = "%06d" % random.randint(1, 1000000)
-		try:
-			self.redis.set_value("sms_code_%s" % mobile, sms_code)
-			self.redis.set_expire("sms_code_%s" % mobile, 360)
-		except Exception as e:
-			logging.error(e)
-			data = {
-				"errcode":'1',
-				"errmsg":"create Smscode fail"
-			}
+			print('sms_code========',sms_code)
 
-		print('sms_code========',sms_code)
-
-		# 发送短信验证码
-		try:
-			result = ccp.sendTemplateSMS(mobile, [sms_code, 1], 1)
-		except Exception as e:
-			logging.error(e)
-			data = {
-				"errcode":'1',
-				"errmsg":"send Smscode fail"
-			}
-		if result:
-			data = {
-				"errcode":'0',
-				"errmsg":"ok"
-			}
-		else:
-			data = {
-				"errcode":'1',
-				"errmsg":"目前该短信注册功能采用的是云通讯的测试功能，只支持绑定的手机号发送验证码，此处其他手机可输入任意值即可"
-			}
+			# 发送短信验证码
+			try:
+				result = ccp.sendTemplateSMS(mobile, [sms_code, 1], 1)
+			except Exception as e:
+				logging.error(e)
+				data = {
+					"errcode":'1',
+					"errmsg":"send Smscode fail"
+				}
+			if result:
+				data = {
+					"errcode":'0',
+					"errmsg":"ok"
+				}
+			else:
+				data = {
+					"errcode":'1',
+					"errmsg":"目前该短信注册功能由于采用的是云通讯的测试功能，只支持绑定的手机号发送验证码，此处其他手机可输入任意值即可"
+				}
 
 		self.write(data)
 		self.set_header("Content-Type", "application/json; charset=UTF-8")
@@ -811,4 +810,83 @@ class Area_info_handler(BaseHandler):
 
 		self.write(dict(errcode='0', errmsg="OK", data=data))
 
-################ 此处的作用是处理在提交房源的时候的房屋图片提交#################
+################ 此处的作用 是退出当前用户的登录#################
+
+class Login_out(BaseHandler):
+	@required_login
+	def get(self):
+		########### 获取当前用户的情况###################################
+		session_id = self.get_secure_cookie("session_id")
+		# print("session_id===",session_id)
+		#将当前用户在redis中存储的信息删除掉
+		ret = self.redis.del_value(session_id)
+		# print('ret=========',ret)
+		if not ret:
+			logging.error('delete value fial')
+			data = {
+				'errcode':'1',
+			}
+		else:
+			data = {
+				'errcode':'0',
+			}
+
+		self.write(data)
+		self.set_header('Content-Type', 'application/json; charset=UTF-8')
+
+
+##################### 此处的作用是按照所选择的条件查询房屋资源################
+################# 此函数目前的状态是：待补充功能 ############################
+class House_list_handler(BaseHandler):
+	"""房源列表页面"""
+	def get(self):
+		"""get方式用来获取数据库数据，本身的逻辑不会对数据库数据产生影响"""
+		"""
+		传入参数说明
+		start_date 用户查询的起始时间 sd     非必传   ""          "2017-02-28"
+		end_date    用户查询的终止时间 ed    非必传   ""
+		area_id     用户查询的区域条件   aid 非必传   ""
+		sort_key    排序的关键词     sk     非必传   "new"      "new" "booking" "price-inc"  "price-des"
+		page        返回的数据页数     p     非必传   1
+		"""
+		# 获取参数
+		start_date = self.get_argument("sd", "")
+		end_date = self.get_argument("ed", "")
+		area_id = self.get_argument("aid", "")
+		sort_key = self.get_argument("sk", "new")
+		page = self.get_argument("p", "1")
+
+		# 检查参数
+		# 判断日期格式、sort_Key 字段的值、page的整数
+
+		# 数据查询
+		# 涉及到表： ih_house_info 房屋的基本信息  ih_user_profile 房东的用户信息 ih_order_info 房屋订单数据
+
+		sql = "select hi_title,hi_house_id,hi_price,hi_room_count,hi_address,hi_order_count,up_avatar,hi_index_image_url,hi_ctime" \
+			  " from ih_house_info inner join ih_user_profile on hi_user_id=up_user_id left join ih_order_info" \
+			  " on hi_house_id=oi_house_id where hi_area_id=%s"%area_id
+
+		logging.debug(sql)
+		try:
+			ret = self.database.get_values_from_mysql(sql)
+		except Exception as e:
+			logging.error(e)
+			return self.write(dict(errcode='4', errmsg="查询出错"))
+		data = []
+		if ret:
+			for l in ret:
+				house = dict(
+					house_id=l[1],
+					title=l[0],
+					price=l[2],
+					room_count=l[3],
+					address=l[4],
+					order_count=l[5],
+					avatar=l[6] if l[6] else "",
+					image_url=l[7] if l[7] else ""
+				)
+				data.append(house)
+		total_page = len(data)
+		self.write(dict(errcode='0', errmsg="OK", data=data, total_page=total_page))
+		self.set_header('Content-Type', 'application/json; charset=UTF-8')
+

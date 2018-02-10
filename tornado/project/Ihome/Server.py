@@ -40,7 +40,9 @@ class Application(tornado.web.Application):
 		url(r'^/api/order/my$', Handlers.Show_order, dict(database = self.mysql, database_redis = self.redis), name="Show_order"),
 		url(r'^/api/profile/auth$', Handlers.Real_name_verity, dict(database = self.mysql, database_redis = self.redis), name="Real_name_verity"),
 		url(r'^/api/house/my$', Handlers.Myhouse_show, dict(database = self.mysql, database_redis = self.redis), name="Myhouse_show"),
+		url(r'^/api/house/list2$', Handlers.House_list_handler, dict(database = self.mysql, database_redis = self.redis), name = "House_list_handler"),
 		url(r'^/api/house/area$', Handlers.Area_info_handler, dict(database = self.mysql, database_redis = self.redis), name="Area_info_handler"),
+		url(r'^/api/logout$', Handlers.Login_out, dict(database = self.mysql, database_redis = self.redis), name = "Login_out"),
 		url(r'/(.*)',StaticFileHandler, {"path":os.path.join(os.path.dirname(__file__),"template"), "default_filename":"index.html"}, name="index"),
 		],
 		################# end ########################
