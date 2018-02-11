@@ -53,6 +53,7 @@ function updateHouseData(action="append") {
                 }
             }
         }
+
     })
 }
 
@@ -68,6 +69,7 @@ $(document).ready(function(){
     $(".filter-title-bar>.filter-title").eq(1).children("span").eq(0).html(areaName);
 
     $.get("/api/house/area", function(data){
+        console.log(data.errcode)
         if ("0" == data.errcode) {
             var areaId = queryData["aid"];
             if (areaId) {
@@ -80,6 +82,7 @@ $(document).ready(function(){
                     }
                 }
             } else {
+                console.log("others")
                 for (var i=0; i<data.data.length; i++) {
                     $(".filter-area").append('<li area-id="'+ data.data[i].area_id+'">'+ data.data[i].name+'</li>');
                 }
@@ -101,6 +104,10 @@ $(document).ready(function(){
                 }
             }
         }
+        else if ("4101" == data.errcode){
+                location.href = "/login.html";
+                return;
+            }
     });
 
 
